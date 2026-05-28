@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maha AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #030712;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bg-orb1 {
+            position: fixed;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 65%);
+            top: -150px; left: -120px; border-radius: 50%;
+            pointer-events: none;
+        }
+        .bg-orb2 {
+            position: fixed;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 65%);
+            bottom: -100px; right: -80px; border-radius: 50%;
+            pointer-events: none;
+        }
+        .bg-orb3 {
+            position: fixed;
+            width: 250px; height: 250px;
+            background: radial-gradient(circle, rgba(6,182,212,0.07) 0%, transparent 65%);
+            top: 50%; left: 50%; transform: translate(-50%,-50%); border-radius: 50%;
+            pointer-events: none;
+        }
+        .grid-lines {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(14,165,233,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14,165,233,0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+        }
+
+        .window {
+            width: 100%;
+            max-width: 520px;
+            height: 100vh;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(30px);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .brand { display: flex; align-items: center; gap: 11px; }
+        .brand-icon {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px;
+            box-shadow: 0 0 20px rgba(14,165,233,0.4);
+        }
+        .brand-info { display: flex; flex-direction: column; }
+        .brand-name { font-size: 16px; font-weight: 700; color: #f1f5f9; letter-spacing: -0.3px; }
+        .brand-sub { font-size: 10px; color: rgba(148,163,184,0.8); letter-spacing: 0.5px; text-transform: uppercase; }
+
+        .pills { display: flex; gap: 6px; align-items: center; }
+        .pill {
+            display: flex; align-items: center; gap: 5px;
+            padding: 5px 10px; border-radius: 20px; font-size: 10px;
+            font-family: monospace; letter-spacing: 0.3px;
+        }
+        .pill.online { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); color: #86efac; }
+        .pill.model { background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.2); color: #7dd3fc; }
+        .dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; animation: blink 2s infinite; }
+
+        .messages {
+            flex: 1;
+            background: rgba(3,7,18,0.85);
+            backdrop-filter: blur(20px);
+            padding: 22px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .messages::-webkit-scrollbar { width: 3px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+        .msg { display: flex; gap: 10px; align-items: flex-start; animation: fadeUp 0.3s ease; }
+        .msg.user { flex-direction: row-reverse; }
+
+        .ava {
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; flex-shrink: 0;
+        }
+        .ava.ai { background: linear-gradient(135deg, #0ea5e9, #6366f1); box-shadow: 0 0 12px rgba(14,165,233,0.3); }
+        .ava.me { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); }
+
+        .txt-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 75%; }
+        .txt {
+            padding: 11px 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.65;
+            color: #e2e8f0;
+        }
+        .txt.ai {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-top-left-radius: 3px;
+        }
+        .txt.me {
+            background: linear-gradient(135deg, rgba(14,165,233,0.25), rgba(99,102,241,0.2));
+            border: 1px solid rgba(14,165,233,0.25);
+            border-top-right-radius: 3px;
+        }
+        .time { font-size: 10px; color: rgba(148,163,184,0.5); font-family: monospace; padding: 0 2px; }
+        .msg.user .time { text-align: right; }
+
+        .typing-row { display: flex; gap: 10px; align-items: flex-start; animation: fadeUp 0.3s ease; }
+        .typing-bubble {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 14px;
+            border-top-left-radius: 3px;
+            padding: 13px 14px;
+            display: flex; gap: 4px; align-items: center;
+        }
+        .td { width: 6px; height: 6px; background: rgba(148,163,184,0.5); border-radius: 50%; animation: tdBounce 1.2s infinite; }
+        .td:nth-child(2) { animation-delay: 0.2s; }
+        .td:nth-child(3) { animation-delay: 0.4s; }
+
+        .bottom {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(30px);
+            border-top: 1px solid rgba(255,255,255,0.07);
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .input-row { display: flex; gap: 10px; align-items: flex-end; }
+
+        #user-input {
+            flex: 1;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 13px;
+            padding: 11px 15px;
+            font-size: 14px;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', sans-serif;
+            outline: none;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            transition: border-color 0.2s;
+        }
+        #user-input:focus { border-color: rgba(14,165,233,0.4); }
+        #user-input::placeholder { color: rgba(148,163,184,0.4); }
+
+        #send-btn {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            border: none; border-radius: 12px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: white; flex-shrink: 0;
+            box-shadow: 0 0 16px rgba(14,165,233,0.35);
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        #send-btn:hover { opacity: 0.85; }
+        #send-btn:active { transform: scale(0.95); }
+        #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        #clear-btn {
+            background: none; border: none;
+            color: rgba(148,163,184,0.5);
+            font-size: 11px; cursor: pointer;
+            font-family: monospace;
+            transition: color 0.2s;
+            text-align: right;
+            padding: 0;
+        }
+        #clear-btn:hover { color: rgba(239,68,68,0.7); }
+        .hint { font-size: 10px; color: rgba(100,116,139,0.7); text-align: center; font-family: monospace; }
+
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes tdBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    </style>
+</head>
+<body>
+    <div class="bg-orb1"></div>
+    <div class="bg-orb2"></div>
+    <div class="bg-orb3"></div>
+    <div class="grid-lines"></div>
+
+    <div class="window">
+        <div class="topbar">
+            <div class="brand">
+                <div class="brand-icon">✦</div>
+                <div class="brand-info">
+                    <div class="brand-name">Maha AI</div>
+                    <div class="brand-sub">Powered by Llama 3.3</div>
+                </div>
+            </div>
+            <div class="pills">
+                <div class="pill online"><div class="dot"></div>Online</div>
+                <div class="pill model">70B</div>
+            </div>
+        </div>
+
+        <div class="messages" id="chat-messages">
+            <div class="msg">
+                <div class="ava ai">✦</div>
+                <div class="txt-wrap">
+                    <div class="txt ai">Hello! I'm Maha AI — your intelligent assistant. Ask me anything! 🚀</div>
+                    <div class="time">Maha AI · just now</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom">
+            <div class="input-row">
+                <textarea id="user-input" placeholder="Ask me anything..." rows="1"></textarea>
+                <button id="send-btn">➤</button>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="hint">Enter to send · Shift+Enter for new line</div>
+                <button id="clear-btn">🗑 Clear chat</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sendBtn = document.getElementById("send-btn");
+        const userInput = document.getElementById("user-input");
+        const chatMessages = document.getElementById("chat-messages");
+        const clearBtn = document.getElementById("clear-btn");
+
+        function getTime() {
+            return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function addMessage(text, sender) {
+            const row = document.createElement("div");
+            row.classList.add("msg");
+            if (sender === "user") row.classList.add("user");
+
+            const ava = document.createElement("div");
+            ava.classList.add("ava");
+            ava.classList.add(sender === "user" ? "me" : "ai");
+            ava.textContent = sender === "user" ? "👤" : "✦";
+
+            const wrap = document.createElement("div");
+            wrap.classList.add("txt-wrap");
+
+            const bubble = document.createElement("div");
+            bubble.classList.add("txt");
+            bubble.classList.add(sender === "user" ? "me" : "ai");
+            bubble.textContent = text;
+
+            const time = document.createElement("div");
+            time.classList.add("time");
+            time.textContent = `${sender === "user" ? "You" : "Maha AI"} · ${getTime()}`;
+
+            wrap.appendChild(bubble);
+            wrap.appendChild(time);
+            row.appendChild(ava);
+            row.appendChild(wrap);
+            chatMessages.appendChild(row);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            const row = document.createElement("div");
+            row.classList.add("typing-row");
+            row.id = "typing";
+            const ava = document.createElement("div");
+            ava.classList.add("ava", "ai");
+            ava.textContent = "✦";
+            const bubble = document.createElement("div");
+            bubble.classList.add("typing-bubble");
+            bubble.innerHTML = '<div class="td"></div><div class="td"></div><div class="td"></div>';
+            row.appendChild(ava);
+            row.appendChild(bubble);
+            chatMessages.appendChild(row);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            const t = document.getElementById("typing");
+            if (t) t.remove();
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+            addMessage(message, "user");
+            userInput.value = "";
+            userInput.style.height = "auto";
+            sendBtn.disabled = true;
+            showTyping();
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message })
+                });
+                const data = await response.json();
+                hideTyping();
+                addMessage(data.reply, "bot");
+            } catch (err) {
+                hideTyping();
+                addMessage("Sorry, something went wrong. Please try again!", "bot");
+            }
+            sendBtn.disabled = false;
+        }
+
+        clearBtn.addEventListener("click", async () => {
+            await fetch("/clear", { method: "POST" });
+            chatMessages.innerHTML = `
+                <div class="msg">
+                    <div class="ava ai">✦</div>
+                    <div class="txt-wrap">
+                        <div class="txt ai">Chat cleared! How can I help you? 😊</div>
+                        <div class="time">Maha AI · ${getTime()}</div>
+                    </div>
+                </div>`;
+        });
+
+        userInput.addEventListener("input", function() {
+            this.style.height = "auto";
+            this.style.height = this.scrollHeight + "px";
+        });
+
+        sendBtn.addEventListener("click", sendMessage);
+        userInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
